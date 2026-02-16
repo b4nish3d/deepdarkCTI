@@ -1,0 +1,36 @@
+name: Sync Fork with Upstream
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # Runs every 6 hours (adjust as needed)
+  workflow_dispatch:        # Allows manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for proper merging
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/fastfire/deepdarkCTI.git
+          git fetch upstream
+
+      - name: Sync default branch
+        run: |
+          DEFAULT_BRANCH=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')
+          git checkout $DEFAULT_BRANCH
+          git merge upstream/$DEFAULT_BRANCH --ff-only || true
+          git push origin $DEFAULT_BRANCH
